@@ -12,7 +12,13 @@ from deepchem.feat import Featurizer
 
 class BindingPocketFeaturizer(Featurizer):
   """
-  Featurizes binding pockets with information about chemical environments.
+  Featurizes binding pockets with information about chemical
+  environments.
+
+  Expects to be given a pdb file, and coordinates for the
+  pockets to featurize. Featurization is currently very simple
+  and counts the number of residues of each type present in the
+  pocket.
   """
 
   residues = [
@@ -31,6 +37,17 @@ class BindingPocketFeaturizer(Featurizer):
                 verbose=False):
     """
     Calculate atomic coodinates.
+
+    Params
+    ------
+    protein_file: str
+      Location of PDB file. Will be loaded by MDTraj
+    pockets: list
+      TODO
+    pocket_atoms_map: dict
+      Maps pockets to a list of atoms in the pocket
+    pocket_coords: list
+      List of coordinates for the pocket in PDB.
     """
     import mdtraj
     protein = mdtraj.load(protein_file)

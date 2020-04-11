@@ -20,7 +20,18 @@ logger = logging.getLogger(__name__)
 
 
 def extract_active_site(protein_file, ligand_file, cutoff=4):
-  """Extracts a box for the active site."""
+  """Extracts a box for the active site.
+
+  Params
+  ------
+  protein_file: str
+    Location of protein PDB
+  ligand_file: str
+    Location of ligand input file
+  cutoff: int, optional
+    The distance in angstroms from the protein pocket to
+    consider for featurization.
+  """
   protein_coords = rdkit_util.load_molecule(
       protein_file, add_hydrogens=False)[0]
   ligand_coords = rdkit_util.load_molecule(
@@ -193,7 +204,15 @@ class ConvexHullPocketFinder(BindingPocketFinder):
     return get_all_boxes(coords, self.pad)
 
   def find_pockets(self, protein_file, ligand_file):
-    """Find list of suitable binding pockets on protein."""
+    """Find list of suitable binding pockets on protein.
+
+    Params
+    ------
+    protein_file: str
+      Location of the PDB file to load
+    ligand_file: str
+      Location of the ligand file to load
+    """
     protein_coords = rdkit_util.load_molecule(
         protein_file, add_hydrogens=False, calc_charges=False)[0]
     ligand_coords = rdkit_util.load_molecule(

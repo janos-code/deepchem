@@ -18,7 +18,16 @@ def load_delaney(featurizer='ECFP',
                  data_dir=None,
                  save_dir=None,
                  **kwargs):
-  """Load delaney datasets."""
+  """Load delaney datasets.
+
+  The Delaney datasets are extracted from the following paper
+
+  Delaney, John S. "ESOL: estimating aqueous solubility directly from molecular structure." Journal of chemical information and computer sciences 44.3 (2004): 1000-1005.
+
+  This dataset contains 2874 measured aqueous solubility
+  values. The source dataset is available in the supplemental
+  material of the original paper.
+  """
   # Featurize Delaney dataset
   logger.info("About to featurize Delaney dataset.")
   if data_dir is None:
