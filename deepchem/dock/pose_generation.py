@@ -2,11 +2,6 @@
 Generates protein-ligand docked poses using Autodock Vina.
 """
 from deepchem.utils import mol_xyz_util
-
-__author__ = "Bharath Ramsundar"
-__copyright__ = "Copyright 2016, Stanford University"
-__license__ = "MIT"
-
 import logging
 import numpy as np
 import os
@@ -17,6 +12,8 @@ from deepchem.dock.binding_pocket import RFConvexHullPocketFinder
 from deepchem.utils import rdkit_util
 
 logger = logging.getLogger(__name__)
+
+DATA_DIR = deepchem.utils.get_data_dir()
 
 
 class PoseGenerator(object):
@@ -51,30 +48,56 @@ def write_conf(receptor_filename,
 
 
 class VinaPoseGenerator(PoseGenerator):
-  """Uses Autodock Vina to generate binding poses."""
+  """Uses Autodock Vina to generate binding poses.
 
-  def __init__(self, exhaustiveness=10, detect_pockets=True):
-    """Initializes Vina Pose generation"""
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    self.vina_dir = os.path.join(current_dir, "autodock_vina_1_1_2_linux_x86")
+  This class uses Autodock Vina to make make predictions of binding poses. It
+  downloads the Autodock Vina executable for your system to your specified
+  DEEPCHEM_DATA_DIR (remember this is an environment variable you set) and
+  invokes the executable to perform pose generation for you.
+  """
+
+  def __init__(self, exhaustiveness=10, detect_pockets=True, sixty_four_bits=True):
+    """Initializes Vina Pose Generator
+
+  
+    Params
+    ------
+    exhaustiveness: int, optional
+      Tells Autodock Vina how exhaustive it should be with pose generation.
+    detect_pockets: bool, optional
+      If True, attempt to automatically detect binding pockets for this protein.
+    sixty_four_bits: bool, optional
+      Specifies whether this is a 64-bit machine. Needed to download the correct executable. 
+    """
+    self.vina_dir = os.path.join(DATA_DIR, "autodock_vina_1_1_2_linux_x86")
     self.exhaustiveness = exhaustiveness
     self.detect_pockets = detect_pockets
     if self.detect_pockets:
       self.pocket_finder = RFConvexHullPocketFinder()
     if not os.path.exists(self.vina_dir):
       logger.info("Vina not available. Downloading")
-      # TODO(rbharath): May want to move this file to S3 so we can ensure it's
-      # always available.
-      wget_cmd = "wget -nv -c -T 15 http://vina.scripps.edu/download/autodock_vina_1_1_2_linux_x86.tgz"
+      if platform.system() == 'Linux':
+        filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_linux_x86.tgz" 
+        dirname = "autodock_vina_1_1_2_linux_x86"
+      elif platform.system() == 'Darwin':
+        if sixty_four_bits:
+          filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac_64bit.tar.gz"
+          dirname = "autodock_vina_1_1_2_mac_catalina_64bit"
+        else:
+          filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac.tgz"
+          dirname = "autodock_vina_1_1_2_linux_x86"
+      else:
+        raise ValueError("This module can only run on Linux or Mac. If you are on Windows, please try using a cloud platform to run this code instead.")
+      wget_cmd = "wget -nv -c -T 15 %s" % filename
       call(wget_cmd.split())
       logger.info("Downloaded Vina. Extracting")
-      download_cmd = "tar xzvf autodock_vina_1_1_2_linux_x86.tgz"
-      call(download_cmd.split())
+      untar_cmd = "tar xzvf %s" % filename
+      call(untar_cmd.split())
       logger.info("Moving to final location")
-      mv_cmd = "mv autodock_vina_1_1_2_linux_x86 %s" % current_dir
+      mv_cmd = "mv %s %s" % (dirname DATA_DIR)
       call(mv_cmd.split())
       logger.info("Cleanup: removing downloaded vina tar.gz")
-      rm_cmd = "rm autodock_vina_1_1_2_linux_x86.tgz"
+      rm_cmd = "rm %s" % filename
       call(rm_cmd.split())
     self.vina_cmd = os.path.join(self.vina_dir, "bin/vina")
 
@@ -85,7 +108,20 @@ class VinaPoseGenerator(PoseGenerator):
                      box_dims=None,
                      dry_run=False,
                      out_dir=None):
-    """Generates the docked complex and outputs files for docked complex."""
+    """Generates the docked complex and outputs files for docked complex.
+
+    Params
+    ------
+    protein_file: str
+      The filename for the protein file. If "foo.pdb" is the protein file,
+      there must be a second "foo.pdbqt" file in the same directory for this
+      function to be invoked.
+    ligand_file: str
+      The filename for the ligand file
+    centroid: tuple, optional
+      The centroid to dock against. Is computed is not specified.
+    TODO
+    """
     if out_dir is None:
       out_dir = tempfile.mkdtemp()
 

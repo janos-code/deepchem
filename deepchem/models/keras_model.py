@@ -256,7 +256,10 @@ class KerasModel(Model):
     callbacks: function or list of functions
       one or more functions of the form f(model, step) that will be invoked after
       every step.  This can be used to perform validation, logging, etc.
-   """
+    """
+    #################################################
+    print("fit")
+    #################################################
     return self.fit_generator(
         self.default_generator(
             dataset, epochs=nb_epoch,
@@ -330,6 +333,9 @@ class KerasModel(Model):
     # Main training loop.
 
     for batch in generator:
+      ################################################
+      #print("batch")
+      ################################################
       self._create_training_ops(batch)
       if restore:
         self.restore()
@@ -349,6 +355,10 @@ class KerasModel(Model):
       # Report progress and write checkpoints.
       averaged_batches += 1
       should_log = (current_step % self.tensorboard_log_frequency == 0)
+      ####################################################
+      #print("should_log")
+      #print(should_log)
+      ####################################################
       if should_log:
         avg_loss = float(avg_loss) / averaged_batches
         logger.info(

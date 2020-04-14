@@ -5,11 +5,10 @@ import logging
 import types
 import numpy as np
 import multiprocessing
-
-__author__ = "Steven Kearnes"
-__copyright__ = "Copyright 2014, Stanford University"
-__license__ = "BSD 3-clause"
-
+###################################################
+import logging
+logging.basicConfig(level=logging.DEBUG)
+###################################################
 
 def _featurize_complex(featurizer, mol_pdb_file, protein_pdb_file, log_message):
   logging.info(log_message)
@@ -21,7 +20,7 @@ class ComplexFeaturizer(object):
   Abstract class for calculating features for mol/protein complexes.
   """
 
-  def featurize_complexes(self, mol_files, protein_pdbs):
+  def featurize_complexes(self, mol_files, protein_pdbs, parallelize=True):
     """
     Calculate features for mol/protein complexes.
 
@@ -31,6 +30,8 @@ class ComplexFeaturizer(object):
       List of PDB filenames for molecules.
     protein_pdbs: list
       List of PDB filenames for proteins.
+    parallelize: bool
+      Use multiprocessing to parallelize
 
     Returns
     -------
@@ -39,18 +40,28 @@ class ComplexFeaturizer(object):
     failures: list
       Indices of complexes that failed to featurize.
     """
-    pool = multiprocessing.Pool()
-    results = []
-    for i, (mol_file, protein_pdb) in enumerate(zip(mol_files, protein_pdbs)):
-      log_message = "Featurizing %d / %d" % (i, len(mol_files))
-      results.append(
-          pool.apply_async(_featurize_complex,
-                           (self, mol_file, protein_pdb, log_message)))
-    pool.close()
+    if parallelize:
+      pool = multiprocessing.Pool()
+      results = []
+      for i, (mol_file, protein_pdb) in enumerate(zip(mol_files, protein_pdbs)):
+        log_message = "Featurizing %d / %d" % (i, len(mol_files))
+        results.append(
+            pool.apply_async(_featurize_complex,
+                             (self, mol_file, protein_pdb, log_message)))
+      pool.close()
+    else:
+      results = []
+      for i, (mol_file, protein_pdb) in enumerate(zip(mol_files, protein_pdbs)):
+        log_message = "Featurizing %d / %d" % (i, len(mol_files))
+        results.append(
+            _featurize_complex(self, mol_file, protein_pdb, log_message))
     features = []
     failures = []
     for ind, result in enumerate(results):
-      new_features = result.get()
+      if parallelize:
+        new_features = result.get()
+      else:
+        new_features = result
       # Handle loading failures which return None
       if new_features is not None:
         features.append(new_features)

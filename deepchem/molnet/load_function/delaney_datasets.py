@@ -69,8 +69,9 @@ def load_delaney(featurizer='ECFP',
   elif featurizer == "smiles2img":
     img_spec = kwargs.get("img_spec", "std")
     img_size = kwargs.get("img_size", 80)
+    res = kwargs.get("res", 0.5)
     featurizer = deepchem.feat.SmilesToImage(
-        img_size=img_size, img_spec=img_spec)
+        img_size=img_size, img_spec=img_spec, res=res)
 
   loader = deepchem.data.CSVLoader(
       tasks=delaney_tasks, smiles_field="smiles", featurizer=featurizer)
