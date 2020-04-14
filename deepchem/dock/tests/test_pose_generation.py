@@ -1,10 +1,6 @@
 """
 Tests for Pose Generation
 """
-__author__ = "Bharath Ramsundar"
-__copyright__ = "Copyright 2016, Stanford University"
-__license__ = "MIT"
-
 import os
 import sys
 import unittest
