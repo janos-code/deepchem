@@ -1,12 +1,15 @@
 """
 Generates protein-ligand docked poses using Autodock Vina.
 """
+import platform
+import deepchem
 from deepchem.utils import mol_xyz_util
 import logging
 import numpy as np
 import os
 import tempfile
 from subprocess import call
+from subprocess import check_output
 from deepchem.feat import hydrogenate_and_compute_partial_charges
 from deepchem.dock.binding_pocket import RFConvexHullPocketFinder
 from deepchem.utils import rdkit_util
@@ -50,10 +53,11 @@ def write_conf(receptor_filename,
 class VinaPoseGenerator(PoseGenerator):
   """Uses Autodock Vina to generate binding poses.
 
-  This class uses Autodock Vina to make make predictions of binding poses. It
-  downloads the Autodock Vina executable for your system to your specified
-  DEEPCHEM_DATA_DIR (remember this is an environment variable you set) and
-  invokes the executable to perform pose generation for you.
+  This class uses Autodock Vina to make make predictions of
+  binding poses. It downloads the Autodock Vina executable for
+  your system to your specified DEEPCHEM_DATA_DIR (remember this
+  is an environment variable you set) and invokes the executable
+  to perform pose generation for you.
   """
 
   def __init__(self, exhaustiveness=10, detect_pockets=True, sixty_four_bits=True):
@@ -77,25 +81,29 @@ class VinaPoseGenerator(PoseGenerator):
     if not os.path.exists(self.vina_dir):
       logger.info("Vina not available. Downloading")
       if platform.system() == 'Linux':
-        filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_linux_x86.tgz" 
+        url = "http://vina.scripps.edu/download/autodock_vina_1_1_2_linux_x86.tgz"
+        filename = "autodock_vina_1_1_2_linux_x86.tgz" 
         dirname = "autodock_vina_1_1_2_linux_x86"
       elif platform.system() == 'Darwin':
         if sixty_four_bits:
-          filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac_64bit.tar.gz"
+          url = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac_64bit.tar.gz"
+          filename = "autodock_vina_1_1_2_mac_64bit.tar.gz"
           dirname = "autodock_vina_1_1_2_mac_catalina_64bit"
         else:
-          filename = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac.tgz"
-          dirname = "autodock_vina_1_1_2_linux_x86"
+          url = "http://vina.scripps.edu/download/autodock_vina_1_1_2_mac.tgz"
+          filename = "autodock_vina_1_1_2_mac.tgz"
+          dirname = "autodock_vina_1_1_2_mac"
       else:
         raise ValueError("This module can only run on Linux or Mac. If you are on Windows, please try using a cloud platform to run this code instead.")
-      wget_cmd = "wget -nv -c -T 15 %s" % filename
-      call(wget_cmd.split())
+      wget_cmd = "wget -nv -c -T 15 %s" % url 
+      #retcode = call(wget_cmd.split(), shell=True)
+      check_output(wget_cmd.split())
       logger.info("Downloaded Vina. Extracting")
-      untar_cmd = "tar xzvf %s" % filename
-      call(untar_cmd.split())
+      untar_cmd = "tar -xzvf %s" % filename
+      check_output(untar_cmd.split())
       logger.info("Moving to final location")
-      mv_cmd = "mv %s %s" % (dirname DATA_DIR)
-      call(mv_cmd.split())
+      mv_cmd = "mv %s %s" % (dirname, DATA_DIR)
+      check_output(mv_cmd.split())
       logger.info("Cleanup: removing downloaded vina tar.gz")
       rm_cmd = "rm %s" % filename
       call(rm_cmd.split())
@@ -113,9 +121,8 @@ class VinaPoseGenerator(PoseGenerator):
     Params
     ------
     protein_file: str
-      The filename for the protein file. If "foo.pdb" is the protein file,
-      there must be a second "foo.pdbqt" file in the same directory for this
-      function to be invoked.
+      The filename for the protein file. At present, this must
+      be a PDB file. 
     ligand_file: str
       The filename for the ligand file
     centroid: tuple, optional
